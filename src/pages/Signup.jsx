@@ -4,16 +4,17 @@ import { Mail, Lock, User, Phone, ParkingSquare } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
+import { registerUser, loginUser } from '../services/api';
 
 export default function Signup() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [form, setForm] = useState({
-  name: '',
-  email: '',
-  phone: '',
-  password: '',
-  confirmPassword: ''
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -34,16 +35,22 @@ export default function Signup() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    // Mock signup — replace with real POST /api/auth/register call
-    setTimeout(() => {
-      login({ name: form.name, email: form.email, role: 'user' });
-      setLoading(false);
+    try {
+      // Note: phone isn't stored by the backend yet, only name/email/password
+      await registerUser({ name: form.name, email: form.email, password: form.password });
+      // Registration succeeded — now log the user in right away
+      const data = await loginUser({ email: form.email, password: form.password });
+      login(data.user, data.token);
       navigate('/');
-    }, 900);
+    } catch (err) {
+      setErrors({ form: err.message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,6 +65,11 @@ export default function Signup() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-card border border-border/60 p-7 space-y-5">
+          {errors.form && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {errors.form}
+            </div>
+          )}
           <Input
             label="Full name"
             icon={User}

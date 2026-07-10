@@ -4,6 +4,7 @@ import { Mail, Lock, ParkingSquare } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
+import { loginUser } from '../services/api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,16 +22,19 @@ export default function Login() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    // Mock login — replace with real POST /api/auth/login call
-    setTimeout(() => {
-      login({ name: form.email.split('@')[0], email: form.email, role: 'user' });
-      setLoading(false);
+    try {
+      const data = await loginUser({ email: form.email, password: form.password });
+      login(data.user, data.token);
       navigate('/');
-    }, 900);
+    } catch (err) {
+      setErrors({ form: err.message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,6 +49,11 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-card border border-border/60 p-7 space-y-5">
+          {errors.form && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {errors.form}
+            </div>
+          )}
           <Input
             label="Email address"
             type="email"
@@ -73,7 +82,6 @@ export default function Login() {
               Forgot password?
             </button>
           </div>
-
 
           <Button type="submit" variant="primary" size="lg" className="w-full" disabled={loading}>
             {loading ? 'Logging in...' : 'Log In'}
