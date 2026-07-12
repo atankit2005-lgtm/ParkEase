@@ -5,8 +5,8 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true); // true until we've checked localStorage
 
-  // On app load, check if we already have a saved login from before
   useEffect(() => {
     const savedUser = localStorage.getItem('parkease_user');
     const savedToken = localStorage.getItem('parkease_token');
@@ -14,6 +14,7 @@ export function AuthProvider({ children }) {
       setUser(JSON.parse(savedUser));
       setToken(savedToken);
     }
+    setLoading(false); // done checking, safe to make auth decisions now
   }, []);
 
   const login = (userData, authToken) => {
@@ -31,7 +32,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, token, login, logout, loading, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

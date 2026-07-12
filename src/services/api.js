@@ -38,3 +38,16 @@ export function getParkingLots() {
 export function getParkingLotById(id) {
   return apiRequest(`/parking/${id}`, "GET");
 }
+
+// ===== Bookings =====
+export function createBooking(bookingData, token) {
+  return apiRequest("/bookings", "POST", bookingData, token);
+}
+
+export function getUserBookings(userId, token) {
+  return apiRequest(`/bookings/user/${userId}`, "GET", null, token);
+}
+
+export function cancelBooking(bookingId, token) {
+  return apiRequest(`/bookings/${bookingId}/cancel`, "PUT", null, token);
+}

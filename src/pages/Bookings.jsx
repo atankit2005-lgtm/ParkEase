@@ -1,94 +1,113 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, X } from 'lucide-react';
 import Button from '../components/ui/Button';
-import { myBookings as initialBookings } from '../data/dummyData';
+import { useAuth } from '../context/AuthContext';
+import { getUserBookings, cancelBooking } from '../services/api';
 
 const statusStyles = {
   confirmed: 'bg-primary-50 text-primary',
   completed: 'bg-success/10 text-success',
   cancelled: 'bg-danger/10 text-danger',
+  Cancelled: 'bg-danger/10 text-danger',
 };
 
 export default function Bookings() {
-  const [bookings, setBookings] = useState(initialBookings);
-  const [filter, setFilter] = useState('all');
+  const { user, token } = useAuth();
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [cancellingId, setCancellingId] = useState(null);
 
-  const handleCancel = (id) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' } : b))
-    );
+  useEffect(() => {
+    if (!user) return;
+    getUserBookings(user.id, token)
+      .then((data) => setBookings(data.bookings))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [user, token]);
+
+  const handleCancel = async (bookingId) => {
+    setCancellingId(bookingId);
+    try {
+      await cancelBooking(bookingId, token);
+      // Update just that one booking's status locally, no need to refetch everything
+      setBookings((prev) =>
+        prev.map((b) => (b._id === bookingId ? { ...b, status: 'Cancelled' } : b))
+      );
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setCancellingId(null);
+    }
   };
-
-  const filtered = filter === 'all' ? bookings : bookings.filter((b) => b.status === filter);
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       <h1 className="text-2xl font-bold text-darktext mb-1">My Bookings</h1>
-      <p className="text-sm text-lighttext mb-6">Manage your upcoming and past reservations</p>
+      <p className="text-sm text-lighttext mb-8">Your parking reservations</p>
 
-      <div className="flex gap-2 mb-8">
-        {['all', 'confirmed', 'completed', 'cancelled'].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${
-              filter === f ? 'bg-primary text-white' : 'bg-white border border-border text-lighttext hover:text-darktext'
-            }`}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      {filtered.length === 0 ? (
+      {loading ? (
+        <p className="text-sm text-lighttext">Loading your bookings...</p>
+      ) : error ? (
+        <div className="bg-white rounded-2xl border border-red-200 p-12 text-center">
+          <p className="text-red-600 font-semibold mb-1">Couldn't load your bookings</p>
+          <p className="text-sm text-lighttext">{error}</p>
+        </div>
+      ) : bookings.length === 0 ? (
         <div className="bg-white rounded-2xl border border-border/60 p-12 text-center">
-          <p className="text-darktext font-semibold mb-1">No bookings here</p>
-          <p className="text-sm text-lighttext">Reservations matching this filter will show up here.</p>
+          <p className="text-darktext font-semibold mb-1">No bookings yet</p>
+          <p className="text-sm text-lighttext">Reservations you make will show up here.</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map((b) => (
-            <div
-              key={b.id}
-              className="bg-white rounded-2xl border border-border/60 p-5 flex flex-col sm:flex-row gap-5"
-            >
-              <img src={b.image} alt={b.lotName} className="w-full sm:w-32 h-28 object-cover rounded-xl" />
-              <div className="flex-1">
+          {bookings.map((b) => {
+            const isCancelled = b.status === 'Cancelled' || b.status === 'cancelled';
+            return (
+              <div
+                key={b._id}
+                className="bg-white rounded-2xl border border-border/60 p-5"
+              >
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div>
-                    <h3 className="font-semibold text-darktext">{b.lotName}</h3>
+                    <h3 className="font-semibold text-darktext">{b.parkingLot?.name || 'Parking lot'}</h3>
                     <p className="text-xs text-lighttext flex items-center gap-1.5 mt-1">
-                      <MapPin size={12} /> {b.area}
+                      <MapPin size={12} /> {b.parkingLot?.address}, {b.parkingLot?.city}
                     </p>
                   </div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusStyles[b.status]}`}>
-                    {b.status}
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusStyles[b.status] || statusStyles.confirmed}`}>
+                    {isCancelled ? 'Cancelled' : (b.status || 'Booked')}
                   </span>
                 </div>
 
                 <div className="flex flex-wrap gap-4 mt-3 text-xs text-lighttext">
-                  <span className="flex items-center gap-1.5"><Calendar size={13} /> {b.date}</span>
-                  <span className="flex items-center gap-1.5"><Clock size={13} /> {b.startTime} – {b.endTime}</span>
-                  <span>Slot {b.slot}</span>
+                  <span className="flex items-center gap-1.5">
+                    <Calendar size={13} /> {new Date(b.bookingDate).toLocaleDateString()}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock size={13} /> {b.startTime} – {b.endTime}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm font-bold text-darktext">₹{b.cost}</p>
-                  {b.status === 'confirmed' && (
+                  <p className="text-sm font-bold text-darktext">₹{b.totalAmount}</p>
+                  {!isCancelled && (
                     <Button
                       variant="ghost"
                       size="sm"
                       icon={X}
-                      onClick={() => handleCancel(b.id)}
+                      onClick={() => {
+                        if (confirm('Cancel this booking?')) handleCancel(b._id);
+                      }}
+                      disabled={cancellingId === b._id}
                       className="text-danger hover:bg-danger/10"
                     >
-                      Cancel
+                      {cancellingId === b._id ? 'Cancelling...' : 'Cancel'}
                     </Button>
                   )}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

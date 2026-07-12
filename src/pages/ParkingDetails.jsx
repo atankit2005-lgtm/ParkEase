@@ -1,19 +1,45 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Star, MapPin, Zap, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { MapPin, ArrowLeft } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import { parkingLots } from '../data/dummyData';
+import { getParkingLotById } from '../services/api';
 
 export default function ParkingDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const lot = parkingLots.find((l) => l.id === id);
+  const [lot, setLot] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
-  if (!lot) {
+  useEffect(() => {
+    getParkingLotById(id)
+      .then((data) => {
+        const l = data.parkingLot;
+        setLot({
+          id: l._id,
+          name: l.name,
+          area: `${l.address}, ${l.city}`,
+          price: l.pricePerHour,
+          availableSlots: l.availableSlots,
+          totalSlots: l.totalSlots,
+          image: l.image || 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=800&q=80',
+        });
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return <div className="max-w-3xl mx-auto px-6 py-24 text-center text-lighttext">Loading...</div>;
+  }
+
+  if (error || !lot) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-24 text-center">
         <h2 className="text-xl font-bold text-darktext mb-2">Parking lot not found</h2>
-        <p className="text-sm text-lighttext mb-6">It may have been removed or the link is incorrect.</p>
+        <p className="text-sm text-lighttext mb-6">{error || 'It may have been removed or the link is incorrect.'}</p>
         <Link to="/browse">
           <Button variant="primary">Back to search</Button>
         </Link>
@@ -21,6 +47,7 @@ export default function ParkingDetails() {
     );
   }
 
+  // Visual-only slot grid — backend tracks a total count, not individual numbered slots yet
   const slots = Array.from({ length: 24 }, (_, i) => ({
     number: `${String.fromCharCode(65 + Math.floor(i / 8))}-${(i % 8) + 1}`,
     occupied: i % 3 === 0,
@@ -41,30 +68,11 @@ export default function ParkingDetails() {
             <img src={lot.image} alt={lot.name} className="w-full h-full object-cover" />
           </div>
 
-          <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-darktext">{lot.name}</h1>
-              <p className="text-sm text-lighttext flex items-center gap-1.5 mt-1.5">
-                <MapPin size={14} /> {lot.area} · {lot.distance}
-              </p>
-            </div>
-            <div className="flex items-center gap-1 text-sm font-semibold text-darktext bg-white border border-border rounded-full px-3 py-1.5">
-              <Star size={14} className="fill-warning text-warning" />
-              {lot.rating} <span className="text-lighttext font-normal">({lot.reviews})</span>
-            </div>
-          </div>
-
-          <div className="flex gap-3 mb-8">
-            {lot.covered && (
-              <span className="flex items-center gap-1.5 text-sm bg-primary-50 text-primary px-3 py-1.5 rounded-full font-medium">
-                <ShieldCheck size={14} /> Covered
-              </span>
-            )}
-            {lot.evCharging && (
-              <span className="flex items-center gap-1.5 text-sm bg-primary-50 text-primary px-3 py-1.5 rounded-full font-medium">
-                <Zap size={14} /> EV Charging
-              </span>
-            )}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-darktext">{lot.name}</h1>
+            <p className="text-sm text-lighttext flex items-center gap-1.5 mt-1.5">
+              <MapPin size={14} /> {lot.area}
+            </p>
           </div>
 
           <div>
@@ -73,10 +81,14 @@ export default function ParkingDetails() {
               {slots.map((s) => (
                 <button
                   key={s.number}
+                  type="button"
                   disabled={s.occupied}
+                  onClick={() => setSelectedSlot(selectedSlot === s.number ? null : s.number)}
                   className={`aspect-square rounded-lg text-xs font-semibold flex items-center justify-center border transition-all ${
                     s.occupied
                       ? 'bg-slate-100 text-slate-300 border-slate-100 cursor-not-allowed'
+                      : selectedSlot === s.number
+                      ? 'bg-success text-white border-success'
                       : 'bg-success/10 text-success border-success/30 hover:bg-success hover:text-white cursor-pointer'
                   }`}
                 >
@@ -84,6 +96,7 @@ export default function ParkingDetails() {
                 </button>
               ))}
             </div>
+
             <div className="flex gap-5 mt-4 text-xs text-lighttext">
               <span className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded bg-success/20 border border-success/40 inline-block" /> Available
