@@ -51,3 +51,7 @@ export function getUserBookings(userId, token) {
 export function cancelBooking(bookingId, token) {
   return apiRequest(`/bookings/${bookingId}/cancel`, "PUT", null, token);
 }
+
+export function updateProfile({ name, phone }, token) {
+  return apiRequest("/auth/profile", "PUT", { name, phone }, token);
+}

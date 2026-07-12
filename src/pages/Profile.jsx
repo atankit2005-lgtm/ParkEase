@@ -1,24 +1,36 @@
 import { useState } from 'react';
-import { User, Mail, Phone, Car, Save } from 'lucide-react';
+import { User, Mail, Phone, Save } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { useAuth } from '../context/AuthContext';
+import { updateProfile } from '../services/api';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, token, login } = useAuth();
   const [form, setForm] = useState({
-    name: user?.name || 'Ankit Sharma',
-    email: user?.email || 'ankit@example.com',
-    phone: '98765 43210',
-    vehicle: 'PB08 AB 1234',
+    name: user?.name || '',
+    phone: user?.phone || '',
   });
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSaving(true);
+    setError('');
+    try {
+      const data = await updateProfile({ name: form.name, phone: form.phone }, token);
+      // Refresh the stored user info with the updated data
+      login(data.user, token);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -28,16 +40,21 @@ export default function Profile() {
 
       <div className="flex items-center gap-4 mb-8">
         <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center text-primary font-bold text-xl">
-          {form.name.charAt(0)}
+          {form.name.charAt(0).toUpperCase()}
         </div>
         <div>
           <p className="font-semibold text-darktext">{form.name}</p>
-          <p className="text-sm text-lighttext">{form.email}</p>
+          <p className="text-sm text-lighttext">{user?.email}</p>
         </div>
       </div>
 
       <Card>
         <form onSubmit={handleSave} className="space-y-5">
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
           <Input
             label="Full name"
             icon={User}
@@ -48,8 +65,8 @@ export default function Profile() {
             label="Email address"
             icon={Mail}
             type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            value={user?.email || ''}
+            disabled
           />
           <Input
             label="Phone number"
@@ -57,15 +74,9 @@ export default function Profile() {
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
-          <Input
-            label="Default vehicle number"
-            icon={Car}
-            value={form.vehicle}
-            onChange={(e) => setForm({ ...form, vehicle: e.target.value })}
-          />
 
-          <Button type="submit" variant="primary" icon={Save} className="w-full">
-            {saved ? 'Saved!' : 'Save Changes'}
+          <Button type="submit" variant="primary" icon={Save} className="w-full" disabled={saving}>
+            {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
           </Button>
         </form>
       </Card>
