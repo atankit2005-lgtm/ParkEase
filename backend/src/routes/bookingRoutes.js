@@ -3,6 +3,7 @@ import {
   createBooking,
   getUserBookings,
   cancelBooking,
+  getAllBookings,
 } from "../controllers/bookingController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
@@ -13,5 +14,7 @@ router.post("/", authMiddleware, createBooking);
 router.get("/user/:userId", authMiddleware, getUserBookings);
 
 router.put("/:id/cancel", authMiddleware, cancelBooking);
+
+router.get("/", authMiddleware, getAllBookings);
 
 export default router;

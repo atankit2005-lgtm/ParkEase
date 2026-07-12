@@ -55,3 +55,16 @@ export function cancelBooking(bookingId, token) {
 export function updateProfile({ name, phone }, token) {
   return apiRequest("/auth/profile", "PUT", { name, phone }, token);
 }
+
+// ===== Admin =====
+export function getDashboardStats(token) {
+  return apiRequest("/dashboard", "GET", null, token);
+}
+
+export function getAllBookings(token) {
+  return apiRequest("/bookings", "GET", null, token);
+}
+
+export function createParkingLot(lotData, token) {
+  return apiRequest("/parking", "POST", lotData, token);
+}
