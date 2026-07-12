@@ -29,3 +29,12 @@ export function registerUser({ name, email, password }) {
 export function loginUser({ email, password }) {
   return apiRequest("/auth/login", "POST", { email, password });
 }
+
+// ===== Parking =====
+export function getParkingLots() {
+  return apiRequest("/parking", "GET");
+}
+
+export function getParkingLotById(id) {
+  return apiRequest(`/parking/${id}`, "GET");
+}

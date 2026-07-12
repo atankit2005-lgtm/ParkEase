@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Star, Zap, ShieldCheck } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import Button from '../ui/Button';
 
 export default function ParkingCard({ lot }) {
@@ -37,21 +37,14 @@ export default function ParkingCard({ lot }) {
       </div>
 
       <div className="p-5">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h3 className="font-semibold text-darktext text-base leading-snug">
-              {lot.name}
-            </h3>
-            <p className="text-xs text-lighttext mt-0.5">{lot.area}</p>
-          </div>
-          <div className="flex items-center gap-1 text-xs font-medium text-darktext shrink-0">
-            <Star size={13} className="fill-warning text-warning" />
-            {lot.rating}
-          </div>
+        <div>
+          <h3 className="font-semibold text-darktext text-base leading-snug">
+            {lot.name}
+          </h3>
+          <p className="text-xs text-lighttext mt-0.5">{lot.area}</p>
         </div>
 
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-xs text-lighttext">{lot.distance}</p>
+        <div className="flex items-center justify-end mt-4">
           <p className="text-sm font-bold text-darktext">
             ₹{lot.price}<span className="text-xs font-normal text-lighttext">/hr</span>
           </p>
