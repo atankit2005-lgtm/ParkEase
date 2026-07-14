@@ -11,6 +11,7 @@ export const createBooking = async (req, res) => {
       startTime,
       endTime,
       totalAmount,
+      vehicleNumber
     } = req.body;
 
     // Check Parking Lot
@@ -39,6 +40,7 @@ export const createBooking = async (req, res) => {
       startTime,
       endTime,
       totalAmount,
+      vehicleNumber,
     });
 
     // Reduce Available Slots
@@ -100,6 +102,40 @@ export const getUserBookings = async (req, res) => {
       count: bookings.length,
       bookings,
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+// Delete Booking
+export const deleteBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking Not Found",
+      });
+    }
+
+    // Increase available slots again
+    const parkingLot = await ParkingLot.findById(booking.parkingLot);
+
+    if (parkingLot) {
+      parkingLot.availableSlots += 1;
+      await parkingLot.save();
+    }
+
+    await booking.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Booking Deleted Successfully",
+    });
+
   } catch (error) {
     res.status(500).json({
       success: false,

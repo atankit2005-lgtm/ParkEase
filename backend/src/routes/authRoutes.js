@@ -1,6 +1,10 @@
 import express from "express";
-// import { registerUser } from "../controllers/authController.js";
-import { registerUser, loginUser } from "../controllers/authController.js";
+import {
+  registerUser,
+  loginUser,
+  forgotPassword,
+  resetPassword,
+} from "../controllers/authController.js";
 import {
   registerValidation,
   loginValidation,
@@ -23,4 +27,6 @@ router.post(
   validate,
   loginUser
 );
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
 export default router;

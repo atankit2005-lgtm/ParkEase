@@ -33,6 +33,11 @@ const bookingSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    vehicleNumber: {
+    type: String,
+    required: true,
+    trim: true
+},
 
     status: {
       type: String,

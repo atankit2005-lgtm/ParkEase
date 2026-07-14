@@ -62,6 +62,15 @@ const parkingLotSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    coveredParking: {
+  type: Boolean,
+  default: false,
+},
+
+evCharging: {
+  type: Boolean,
+  default: false,
+},
   },
   {
     timestamps: true,
